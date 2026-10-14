@@ -1,0 +1,57 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Git Checkout') {
+            steps {
+                git 'https://github.com/sunnyramagiri/docker-project.git'
+            }
+        }
+
+        stage('Maven Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('admin') {
+                    withCredentials([
+                        string(credentialsId: 'admin',
+                               variable: 'SONAR_TOKEN')
+                    ]) {
+                        sh '''
+                            mvn sonar:sonar \
+                            -Dsonar.projectKey=docker-project \
+                            -Dsonar.host.url=http://15.252.184.130:9000 \
+                            -Dsonar.token=$SONAR_TOKEN
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Docker Build and Push') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login \
+                            -u "$DOCKER_USER" --password-stdin
+
+                        docker build -t sunnyramagiri/docker-project:latest .
+                        docker push sunnyramagiri/docker-project:latest
+
+                        docker logout
+                    '''
+                }
+            }
+        }
+    }
+}
