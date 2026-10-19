@@ -1,0 +1,44 @@
+---
+Version: '3.2'
+
+# In the below code i have 4 services 
+# Database: mysql:- it will need to store the login ddetails in mysql
+# Monitoring: Grafana: it will show all the storage and application relited stuf
+# Application: word press: this is application 
+# AI App: ai/gemma4: from above 3 of them if any getting need to get in this ai/gemma4 to get trobleshoot steps 
+
+
+services:
+  db:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: sunny
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wpuser
+      MYSQL_PASSWORD: wppass
+    ports:
+      - "9090:3306"
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+
+  Monitoring:
+    image: grafana/grafana
+    ports:
+      - "7070:3000"
+
+  wordpress:
+    image: wordpress:latest
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wpuser
+      WORDPRESS_DB_PASSWORD: wppass
+      WORDPRESS_DB_NAME: wordpress
+    ports:
+      - "3101:80"
+    depends_on:
+      - db
+
+
